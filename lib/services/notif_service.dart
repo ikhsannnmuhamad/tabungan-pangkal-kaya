@@ -2,32 +2,31 @@ import 'package:flutter/material.dart';
 
 class NotifService extends ChangeNotifier {
   final List<Map<String, dynamic>> _notifikasi = [];
-  bool _hasUnread = false;
+  final List<Map<String, dynamic>> _unread = [];
 
   List<Map<String, dynamic>> get notifikasi => _notifikasi;
-  bool get hasUnread => _hasUnread;
+  int get unreadCount => _unread.length;
 
-  /// Tambahkan notifikasi baru
-  void addNotif(String pesan) {
+  void addNotif(String pesan, {String tipe = 'info'}) {
     final now = DateTime.now();
-    _notifikasi.add({
+    final item = {
       'pesan': pesan,
       'waktu': now,
-    });
-    _hasUnread = true;
+      'tipe': tipe,
+    };
+    _notifikasi.add(item);
+    _unread.add(item);
     notifyListeners();
   }
 
-  /// Tandai semua notif sudah dibaca (badge hilang)
   void markAsRead() {
-    _hasUnread = false;
+    _unread.clear();
     notifyListeners();
   }
 
-  /// Hapus semua notifikasi (opsional)
   void clearNotif() {
     _notifikasi.clear();
-    _hasUnread = false;
+    _unread.clear();
     notifyListeners();
   }
 }

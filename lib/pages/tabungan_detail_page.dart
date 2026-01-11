@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/tabungan_service.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../services/notif_service.dart';
 
 class TabunganDetailPage extends StatefulWidget {
   final String tabunganId;
@@ -19,7 +21,6 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
 
   Map<String, dynamic>? _tabungan;
   List<Map<String, dynamic>> _history = [];
-  List<Map<String, dynamic>> _notifikasi = [];
 
   bool _showInput = false;
   bool _showHistory = false;
@@ -53,13 +54,15 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
     _jumlahController.clear();
     setState(() {
       _showInput = false;
-      _notifikasi.add({
-        'pesan':
-            'Berhasil input setoran sebesar Rp ${format.format(jumlah)} pada tanggal ${tanggalFormat.format(DateTime.now())}',
-        'waktu': DateTime.now(),
-      });
     });
-    _loadData();
+    await _loadData();
+
+    // Tambahkan ke NotifService global
+    final notifService = Provider.of<NotifService>(context, listen: false);
+    notifService.addNotif(
+      "Berhasil input setoran sebesar Rp ${format.format(jumlah)} pada ${tanggalFormat.format(DateTime.now())}",
+      tipe: 'setor',
+    );
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Setoran Rp ${format.format(jumlah)} berhasil ditambahkan')),
@@ -83,85 +86,112 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
       appBar: AppBar(
         title: Text(_tabungan!['tujuan']),
         actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications),
-                onPressed: () {
-                  if (_notifikasi.isEmpty) return;
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text("Notifikasi"),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: _notifikasi.map((notif) {
-                          final waktu = notif['waktu'] as DateTime;
-                          final teks = notif['pesan'] as String;
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(Icons.check_circle, color: Colors.green),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
+          Consumer<NotifService>(
+            builder: (context, notifService, _) {
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text("Notifikasi"),
+                          content: SizedBox(
+                            width: double.maxFinite,
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: groupByJamDescending(notifService.notifikasi).entries.map((entry) {
+                                  final jam = entry.key;
+                                  final list = entry.value;
+                                  return Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(teks, style: const TextStyle(fontSize: 14)),
+                                      Text(jam, style: const TextStyle(fontWeight: FontWeight.bold)),
                                       const SizedBox(height: 4),
-                                      Align(
-                                        alignment: Alignment.topRight,
-                                        child: Text(
-                                          jamFormat.format(waktu),
-                                          style: const TextStyle(
-                                              fontSize: 12, color: Colors.grey),
-                                        ),
-                                      ),
+                                      ...list.map((notif) {
+                                        final warna = switch (notif['tipe']) {
+                                          'hapus' => Colors.red,
+                                          'setor' => Colors.green,
+                                          'tambah' => Colors.blue,
+                                          _ => Colors.grey,
+                                        };
+                                        final icon = switch (notif['tipe']) {
+                                          'hapus' => Icons.delete,
+                                          'setor' => Icons.attach_money,
+                                          'tambah' => Icons.savings,
+                                          _ => Icons.info,
+                                        };
+                                        final waktu = notif['waktu'] as DateTime;
+                                        return Container(
+                                          margin: const EdgeInsets.only(bottom: 8),
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: warna.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Icon(icon, color: warna),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(notif['pesan']),
+                                                    Align(
+                                                      alignment: Alignment.topRight,
+                                                      child: Text(
+                                                        jamFormat.format(waktu),
+                                                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }),
                                     ],
-                                  ),
-                                ),
-                              ],
+                                  );
+                                }).toList(),
+                              ),
                             ),
-                          );
-                        }).toList(),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () {
-                            setState(() => _notifikasi.clear());
-                            Navigator.pop(context);
-                          },
-                          child: const Text("Tutup"),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                notifService.markAsRead();
+                                Navigator.pop(context);
+                              },
+                              child: const Text("Tutup"),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              if (_notifikasi.isNotEmpty)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      '${_notifikasi.length}',
-                      style: const TextStyle(fontSize: 12, color: Colors.white),
-                    ),
+                      );
+                    },
                   ),
-                ),
-            ],
+                  if (notifService.unreadCount > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '${notifService.unreadCount}',
+                          style: const TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -170,7 +200,7 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Badge informasi tabungan
+            // Info tabungan
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               decoration: BoxDecoration(
@@ -185,13 +215,10 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Target: Rp ${format.format(target)}',
-                            style: const TextStyle(fontSize: 14)),
-                        Text('Jumlah Terkumpul: Rp ${format.format(saldo)}',
-                            style: const TextStyle(fontSize: 14)),
+                        Text('Target: Rp ${format.format(target)}'),
+                        Text('Jumlah Terkumpul: Rp ${format.format(saldo)}'),
                         Text('Status: $status',
-                            style: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.bold)),
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -249,14 +276,14 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
                 },
               ),
               const SizedBox(height: 8),
-              ElevatedButton(
+                            ElevatedButton(
                 onPressed: _setor,
                 child: const Text('Simpan Setoran'),
               ),
               const SizedBox(height: 16),
             ],
 
-                        // History setoran
+            // History setoran
             if (_showHistory) ...[
               const Text('History Setoran:', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
@@ -268,7 +295,7 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
                     final jumlah = int.tryParse(h['jumlah'].toString()) ?? 0;
                     final waktu = DateTime.tryParse(h['waktu'].toString());
                     final formatted = waktu != null
-                        ? "diinput pada tanggal ${tanggalFormat.format(waktu)} pukul ${jamFormat.format(waktu)}"
+                        ? "diinput pada ${tanggalFormat.format(waktu)} • ${jamFormat.format(waktu)}"
                         : h['waktu'].toString();
 
                     return Card(
@@ -284,14 +311,21 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Rp ${format.format(jumlah)}',
-                                      style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600)),
+                                  Text(
+                                    'Rp ${format.format(jumlah)}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                   const SizedBox(height: 4),
-                                  Text(formatted,
-                                      style: const TextStyle(
-                                          fontSize: 12, color: Colors.grey)),
+                                  Text(
+                                    formatted,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -308,4 +342,16 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
       ),
     );
   }
+}
+
+// Helper: group by jam untuk dialog notifikasi (terbaru di atas)
+Map<String, List<Map<String, dynamic>>> groupByJamDescending(List<Map<String, dynamic>> list) {
+  final sorted = [...list]..sort((a, b) => (b['waktu'] as DateTime).compareTo(a['waktu'] as DateTime));
+  final Map<String, List<Map<String, dynamic>>> grouped = {};
+  for (var item in sorted) {
+    final waktu = item['waktu'] as DateTime;
+    final jam = DateFormat("HH:mm").format(waktu);
+    grouped.putIfAbsent(jam, () => []).add(item);
+  }
+  return grouped;
 }
