@@ -64,6 +64,17 @@ class _MenabungPageState extends State<MenabungPage> {
                 labelText: "Target Nominal",
                 border: OutlineInputBorder(),
               ),
+              onChanged: (val) {
+                final raw = val.replaceAll('.', '').replaceAll(',', '');
+                final number = int.tryParse(raw);
+                if (number != null) {
+                  final formatted = format.format(number);
+                  targetController.value = TextEditingValue(
+                    text: formatted,
+                    selection: TextSelection.collapsed(offset: formatted.length),
+                  );
+                }
+              },
             ),
           ],
         ),
@@ -72,7 +83,7 @@ class _MenabungPageState extends State<MenabungPage> {
           ElevatedButton(
             onPressed: () async {
               final tujuan = tujuanController.text.trim();
-              final target = int.tryParse(targetController.text.trim()) ?? 0;
+              final target = int.tryParse(targetController.text.replaceAll('.', '').replaceAll(',', '')) ?? 0;
               if (tujuan.isEmpty || target <= 0) return;
               await _service.createTabungan(tujuan: tujuan, target: target);
               Navigator.pop(context);
@@ -83,6 +94,32 @@ class _MenabungPageState extends State<MenabungPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _hapusTabungan(String id) async {
+    final konfirmasi = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Hapus Tabungan"),
+        content: const Text("Yakin ingin menghapus tabungan ini?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Batal")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Hapus"),
+          ),
+        ],
+      ),
+    );
+
+    if (konfirmasi == true) {
+      await _service.deleteTabungan(id);
+      _loadTabungan();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Tabungan berhasil dihapus")),
+      );
+    }
   }
 
   @override
@@ -162,23 +199,45 @@ class _MenabungPageState extends State<MenabungPage> {
                 children: filtered.map((entry) {
                   final id = entry.key;
                   final data = Map<String, dynamic>.from(entry.value);
-                  return BadgeWidget(
-                    title:
-                        '${data['tujuan']}\nRp ${format.format(data['saldo'])} / Rp ${format.format(data['target'])}',
-                    icon: Icons.savings,
-                    color: data['status'] == 'tercapai'
-                        ? Colors.green
-                        : Colors.orange,
-                    width: 120,
-                    height: 120,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => TabunganDetailPage(tabunganId: id),
+
+                  final int saldo = int.tryParse(data['saldo'].toString()) ?? 0;
+                  final int target = int.tryParse(data['target'].toString()) ?? 1;
+                  final int percent = ((saldo / target) * 100).clamp(0, 100).toInt();
+                  final String status = data['status'] == 'tercapai' ? 'Tercapai' : 'Proses';
+
+                  return Stack(
+                    children: [
+                      BadgeWidget(
+                        title: '${data['tujuan']}\n$percent%\n$status',
+                        icon: Icons.savings,
+                        color: data['status'] == 'tercapai' ? Colors.green : Colors.orange,
+                        width: 120,
+                        height: 120,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TabunganDetailPage(tabunganId: id),
+                            ),
+                          ).then((_) => _loadTabungan());
+                        },
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () => _hapusTabungan(id),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.delete, size: 16, color: Colors.white),
+                          ),
                         ),
-                      ).then((_) => _loadTabungan());
-                    },
+                      ),
+                    ],
                   );
                 }).toList(),
               ),

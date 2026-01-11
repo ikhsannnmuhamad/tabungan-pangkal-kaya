@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 class TabunganService {
   final DatabaseReference _db = FirebaseDatabase.instance.ref('menabung');
 
+  /// Membuat tabungan baru
   Future<void> createTabungan({
     required String tujuan,
     required int target,
@@ -17,6 +18,7 @@ class TabunganService {
     });
   }
 
+  /// Mengambil semua tabungan
   Future<Map<String, dynamic>> getAllTabungan() async {
     final snapshot = await _db.get();
     if (snapshot.exists) {
@@ -25,6 +27,7 @@ class TabunganService {
     return {};
   }
 
+  /// Menyetor tabungan
   Future<void> setorTabungan({
     required String tabunganId,
     required int jumlah,
@@ -40,17 +43,20 @@ class TabunganService {
     final int saldoBaru = saldoLama + jumlah;
     final String statusBaru = saldoBaru >= target ? 'tercapai' : 'proses';
 
+    // Simpan riwayat setoran
     await tabunganRef.child('history').push().set({
       'jumlah': jumlah,
       'waktu': DateTime.now().toIso8601String(),
     });
 
+    // Update saldo dan status
     await tabunganRef.update({
       'saldo': saldoBaru,
       'status': statusBaru,
     });
   }
 
+  /// Mengambil history setoran
   Future<List<Map<String, dynamic>>> getHistory(String tabunganId) async {
     final snapshot = await _db.child(tabunganId).child('history').get();
     if (!snapshot.exists) return [];
@@ -62,5 +68,11 @@ class TabunganService {
         'waktu': e.value['waktu'],
       };
     }).toList();
+  }
+
+  /// Menghapus tabungan
+  Future<void> deleteTabungan(String id) async {
+    final tabunganRef = _db.child(id);
+    await tabunganRef.remove();
   }
 }

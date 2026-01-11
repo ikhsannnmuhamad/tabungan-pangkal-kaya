@@ -3,11 +3,20 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'pages/home_page.dart';
 
+// Tambahkan import intl untuk inisialisasi locale
+import 'package:intl/date_symbol_data_local.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inisialisasi Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Inisialisasi locale untuk intl (Indonesia)
+  await initializeDateFormatting('id_ID', null);
+
   runApp(const TabunganPangkalKayaApp());
 }
 
