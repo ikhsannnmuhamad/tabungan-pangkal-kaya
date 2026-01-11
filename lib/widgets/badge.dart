@@ -33,13 +33,13 @@ class BadgeWidget extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 48, color: color),
-                const SizedBox(height: 12),
+                Icon(icon, size: 32, color: color),
+                const SizedBox(height: 8),
                 Text(
                   title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

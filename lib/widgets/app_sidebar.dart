@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../pages/calculation_page.dart';
+import '../pages/menabung_page.dart'; // tambahkan import
 
 class AppSidebar extends StatelessWidget {
   const AppSidebar({super.key});
@@ -50,6 +51,12 @@ class AppSidebar extends StatelessWidget {
             title: const Text('Menabung'),
             onTap: () {
               Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MenabungPage(),
+                ),
+              );
             },
           ),
           ListTile(

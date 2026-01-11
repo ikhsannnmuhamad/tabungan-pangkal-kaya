@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/app_sidebar.dart';
 import '../widgets/finance_news_card.dart';
+import '../services/firebase_test_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,6 +12,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final PageController _controller = PageController();
+  final FirebaseTestService _firebaseTest = FirebaseTestService();
+
   int _currentIndex = 0;
 
   final List<Widget> _cards = const [
@@ -52,6 +55,20 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _testFirebase() async {
+    await _firebaseTest.writeTest();
+    final data = await _firebaseTest.readTest();
+    debugPrint('HASIL FIREBASE: $data');
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tes Firebase berhasil (cek console & database)'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,47 +80,62 @@ class _HomePageState extends State<HomePage> {
         centerTitle: true,
       ),
       drawer: const AppSidebar(),
-      body: Column(
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Ringkasan Pasar',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Ringkasan Pasar',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
-          ),
-          SizedBox(
-            height: 200,
-            child: PageView.builder(
-              controller: _controller,
-              physics: const NeverScrollableScrollPhysics(), // MATIKAN SWIPE
-              itemCount: _cards.length,
-              onPageChanged: (i) {
-                setState(() => _currentIndex = i);
-              },
-              itemBuilder: (_, i) => _cards[i],
+            SizedBox(
+              height: 200,
+              child: PageView.builder(
+                controller: _controller,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _cards.length,
+                onPageChanged: (i) {
+                  setState(() => _currentIndex = i);
+                },
+                itemBuilder: (_, i) => _cards[i],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: _currentIndex > 0 ? _back : null,
-                icon: const Icon(Icons.arrow_back),
-              ),
-              Text('${_currentIndex + 1} / ${_cards.length}'),
-              IconButton(
-                onPressed:
-                    _currentIndex < _cards.length - 1 ? _next : null,
-                icon: const Icon(Icons.arrow_forward),
-              ),
-            ],
-          ),
-        ],
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  onPressed: _currentIndex > 0 ? _back : null,
+                  icon: const Icon(Icons.arrow_back),
+                ),
+                Text('${_currentIndex + 1} / ${_cards.length}'),
+                IconButton(
+                  onPressed:
+                      _currentIndex < _cards.length - 1 ? _next : null,
+                  icon: const Icon(Icons.arrow_forward),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // ===============================
+            // TOMBOL TEST FIREBASE (STEP 3)
+            // ===============================
+            ElevatedButton.icon(
+              onPressed: _testFirebase,
+              icon: const Icon(Icons.cloud_done),
+              label: const Text('TEST FIREBASE'),
+            ),
+
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
