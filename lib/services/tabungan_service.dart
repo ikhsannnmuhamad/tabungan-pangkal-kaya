@@ -3,10 +3,13 @@ import 'package:firebase_database/firebase_database.dart';
 class TabunganService {
   final DatabaseReference _db = FirebaseDatabase.instance.ref('menabung');
 
-  /// Membuat tabungan baru
+  /// Membuat tabungan baru dengan wishlist
   Future<void> createTabungan({
     required String tujuan,
     required int target,
+    String kategori = 'sekunder', // primer / sekunder / tersier
+    DateTime? deadline,
+    List<String> wishlist = const [],
   }) async {
     final newRef = _db.push();
     await newRef.set({
@@ -14,6 +17,9 @@ class TabunganService {
       'target': target,
       'saldo': 0,
       'status': 'proses',
+      'kategori': kategori,
+      'deadline': deadline?.toIso8601String(),
+      'wishlist': wishlist,
       'created_at': DateTime.now().toIso8601String(),
     });
   }
@@ -43,13 +49,11 @@ class TabunganService {
     final int saldoBaru = saldoLama + jumlah;
     final String statusBaru = saldoBaru >= target ? 'tercapai' : 'proses';
 
-    // Simpan riwayat setoran
     await tabunganRef.child('history').push().set({
       'jumlah': jumlah,
       'waktu': DateTime.now().toIso8601String(),
     });
 
-    // Update saldo dan status
     await tabunganRef.update({
       'saldo': saldoBaru,
       'status': statusBaru,
@@ -72,7 +76,27 @@ class TabunganService {
 
   /// Menghapus tabungan
   Future<void> deleteTabungan(String id) async {
-    final tabunganRef = _db.child(id);
-    await tabunganRef.remove();
+    await _db.child(id).remove();
+  }
+
+  /// Update tabungan
+  Future<void> updateTabungan(
+    String id, {
+    String? tujuan,
+    int? target,
+    String? kategori,
+    DateTime? deadline,
+    List<String>? wishlist,
+  }) async {
+    final updateData = <String, dynamic>{};
+    if (tujuan != null) updateData['tujuan'] = tujuan;
+    if (target != null) updateData['target'] = target;
+    if (kategori != null) updateData['kategori'] = kategori;
+    if (deadline != null) updateData['deadline'] = deadline.toIso8601String();
+    if (wishlist != null) updateData['wishlist'] = wishlist;
+
+    if (updateData.isNotEmpty) {
+      await _db.child(id).update(updateData);
+    }
   }
 }

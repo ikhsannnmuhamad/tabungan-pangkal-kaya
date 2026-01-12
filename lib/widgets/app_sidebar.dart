@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../pages/calculation_page.dart';
-import '../pages/menabung_page.dart'; // tambahkan import
+import '../pages/menabung_page.dart';
 
 class AppSidebar extends StatelessWidget {
   const AppSidebar({super.key});
@@ -57,13 +57,6 @@ class AppSidebar extends StatelessWidget {
                   builder: (context) => const MenabungPage(),
                 ),
               );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.trending_up),
-            title: const Text('Prediksi Keuangan'),
-            onTap: () {
-              Navigator.pop(context);
             },
           ),
         ],
