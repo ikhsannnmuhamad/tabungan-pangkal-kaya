@@ -25,24 +25,28 @@ class _HomePageState extends State<HomePage> {
 
   final NumberFormat format = NumberFormat("#,###", "id_ID");
 
+  /// ================= IMAGE BADGE =================
   final List<Widget> _cards = const [
     FinanceNewsCard(
-      title: 'IHSG Menguat',
-      subtitle: 'IHSG naik 1,25% ditopang sektor perbankan',
-      icon: Icons.trending_up,
+      title: 'Tahura',
+      subtitle: 'Wisata alam dan ruang terbuka hijau',
+      icon: Icons.park,
       color: Colors.green,
+      backgroundImage: 'assets/images/tahura.jpeg',
     ),
     FinanceNewsCard(
-      title: 'Saham BBCA',
-      subtitle: 'BBCA ditutup naik 2,1% hari ini',
-      icon: Icons.show_chart,
-      color: Colors.blue,
-    ),
-    FinanceNewsCard(
-      title: 'Pasar Global',
-      subtitle: 'Wall Street menguat jelang data inflasi AS',
-      icon: Icons.public,
+      title: 'Taichan',
+      subtitle: 'Kuliner ayam taichan favorit',
+      icon: Icons.restaurant,
       color: Colors.orange,
+      backgroundImage: 'assets/images/taichan.jpeg',
+    ),
+    FinanceNewsCard(
+      title: 'Geprek',
+      subtitle: 'Ayam geprek pedas khas nusantara',
+      icon: Icons.local_fire_department,
+      color: Colors.red,
+      backgroundImage: 'assets/images/geprek.jpeg',
     ),
   ];
 
@@ -52,6 +56,7 @@ class _HomePageState extends State<HomePage> {
     _loadTotalSaldo();
   }
 
+  /// ================= LOAD TOTAL SALDO =================
   Future<void> _loadTotalSaldo() async {
     final data = await _tabunganService.getAllTabungan();
     int total = 0;
@@ -84,6 +89,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// ================= QUICK MENU ITEM =================
   Widget _quickMenu({
     required IconData icon,
     required String label,
@@ -149,8 +155,11 @@ class _HomePageState extends State<HomePage> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.account_balance_wallet,
-                        size: 36, color: Colors.green),
+                    const Icon(
+                      Icons.account_balance_wallet,
+                      size: 36,
+                      color: Colors.green,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -165,7 +174,9 @@ class _HomePageState extends State<HomePage> {
                                 ? 'Rp ••••••'
                                 : 'Rp ${format.format(_totalSaldo)}',
                             style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w600),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
@@ -186,7 +197,7 @@ class _HomePageState extends State<HomePage> {
 
             const SizedBox(height: 24),
 
-            /// ================= PASAR GLOBAL =================
+            /// ================= IMAGE BADGE =================
             SizedBox(
               height: 190,
               child: PageView.builder(
@@ -218,7 +229,7 @@ class _HomePageState extends State<HomePage> {
 
             const SizedBox(height: 24),
 
-            /// ================= QUICK MENU GRID =================
+            /// ================= QUICK MENU =================
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: GridView.count(
