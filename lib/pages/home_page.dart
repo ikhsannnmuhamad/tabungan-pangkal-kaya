@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../widgets/app_sidebar.dart';
 import '../widgets/finance_news_card.dart';
 import '../services/tabungan_service.dart';
+import '../services/theme_service.dart';
 
 import '../pages/calculation_page.dart';
 import '../pages/menabung_page.dart';
@@ -25,28 +27,27 @@ class _HomePageState extends State<HomePage> {
 
   final NumberFormat format = NumberFormat("#,###", "id_ID");
 
-  /// ================= IMAGE BADGE =================
   final List<Widget> _cards = const [
     FinanceNewsCard(
-      title: 'Tahura',
-      subtitle: 'Wisata alam dan ruang terbuka hijau',
-      icon: Icons.park,
+      title: 'Menabung Pangkal Kaya',
+      subtitle: 'Mulai dari langkah kecil untuk masa depan besar',
+      icon: Icons.savings,
       color: Colors.green,
-      backgroundImage: 'assets/images/tahura.jpeg',
+      backgroundImage: 'assets/images/langkah.jpg',
     ),
     FinanceNewsCard(
-      title: 'Taichan',
-      subtitle: 'Kuliner ayam taichan favorit',
-      icon: Icons.restaurant,
+      title: 'Uang Bijak, Hidup Tenang',
+      subtitle: 'Kelola keuangan dengan cerdas demi kesejahteraan',
+      icon: Icons.account_balance,
+      color: Colors.blue,
+      backgroundImage: 'assets/images/kelola.jpg',
+    ),
+    FinanceNewsCard(
+      title: 'Simpan Hari Ini, Nikmati Esok',
+      subtitle: 'Investasi kecil, hasil besar di masa depan',
+      icon: Icons.trending_up,
       color: Colors.orange,
-      backgroundImage: 'assets/images/taichan.jpeg',
-    ),
-    FinanceNewsCard(
-      title: 'Geprek',
-      subtitle: 'Ayam geprek pedas khas nusantara',
-      icon: Icons.local_fire_department,
-      color: Colors.red,
-      backgroundImage: 'assets/images/geprek.jpeg',
+      backgroundImage: 'assets/images/investasi.jpg',
     ),
   ];
 
@@ -56,7 +57,6 @@ class _HomePageState extends State<HomePage> {
     _loadTotalSaldo();
   }
 
-  /// ================= LOAD TOTAL SALDO =================
   Future<void> _loadTotalSaldo() async {
     final data = await _tabunganService.getAllTabungan();
     int total = 0;
@@ -89,7 +89,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// ================= QUICK MENU ITEM =================
   Widget _quickMenu({
     required IconData icon,
     required String label,
@@ -99,6 +98,8 @@ class _HomePageState extends State<HomePage> {
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
       child: Container(
+        width: 90,
+        height: 90,
         decoration: BoxDecoration(
           color: Colors.blue.withOpacity(0.1),
           borderRadius: BorderRadius.circular(14),
@@ -124,27 +125,35 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Tabungan Pangkal Kaya',
+          'E-HTabungan',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+        actions: [
+          Consumer<ThemeService>(
+            builder: (context, themeService, _) => IconButton(
+              icon: Icon(
+                themeService.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+              ),
+              onPressed: themeService.toggleTheme,
+            ),
+          ),
+        ],
       ),
       drawer: const AppSidebar(),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            /// ================= TOTAL SALDO =================
             const Padding(
               padding: EdgeInsets.all(16),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Total Saldo',
+                  'Saldo',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
@@ -155,28 +164,21 @@ class _HomePageState extends State<HomePage> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.account_balance_wallet,
-                      size: 36,
-                      color: Colors.green,
-                    ),
+                    const Icon(Icons.account_balance_wallet,
+                        size: 36, color: Colors.green),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Saldo Terkumpul',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
+                          const Text('Total Tabungan',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                           Text(
                             _hideSaldo
                                 ? 'Rp ••••••'
                                 : 'Rp ${format.format(_totalSaldo)}',
                             style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                                fontSize: 16, fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
@@ -194,10 +196,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            /// ================= IMAGE BADGE =================
             SizedBox(
               height: 190,
               child: PageView.builder(
@@ -208,9 +207,7 @@ class _HomePageState extends State<HomePage> {
                 itemBuilder: (_, i) => _cards[i],
               ),
             ),
-
             const SizedBox(height: 12),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -226,19 +223,19 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 24),
-
-            /// ================= QUICK MENU =================
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: GridView.count(
-                crossAxisCount: 3,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1,
+            const Center(
+              child: Text(
+                'Menu Lainnya',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
                 children: [
                   _quickMenu(
                     icon: Icons.calculate,
@@ -264,21 +261,9 @@ class _HomePageState extends State<HomePage> {
                       );
                     },
                   ),
-                  _quickMenu(
-                    icon: Icons.trending_up,
-                    label: 'Prediksi',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Fitur belum tersedia'),
-                        ),
-                      );
-                    },
-                  ),
                 ],
               ),
             ),
-
             const SizedBox(height: 24),
           ],
         ),

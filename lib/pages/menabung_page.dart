@@ -5,6 +5,7 @@ import 'tabungan_detail_page.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../services/notif_service.dart';
+import '../services/theme_service.dart'; // tambahan untuk toggle theme
 
 class MenabungPage extends StatefulWidget {
   const MenabungPage({super.key});
@@ -263,6 +264,7 @@ class _MenabungPageState extends State<MenabungPage> {
       appBar: AppBar(
         title: const Text("Menabung"),
         actions: [
+          // Search
           IconButton(
             icon: Icon(_searchVisible ? Icons.close : Icons.search),
             tooltip: _searchVisible ? "Tutup Pencarian" : "Cari . . .",
@@ -272,13 +274,14 @@ class _MenabungPageState extends State<MenabungPage> {
               if (!_searchVisible) _searchQuery = "";
             }),
           ),
+          // Notifikasi
           Consumer<NotifService>(
             builder: (context, notifService, _) {
               return Stack(
                 children: [
                   IconButton(
                     icon: const Icon(Icons.notifications),
-                    tooltip: "Notifikasi",
+                                       tooltip: "Notifikasi",
                     onPressed: _showNotifDialog,
                   ),
                   if (notifService.unreadCount > 0)
@@ -300,6 +303,16 @@ class _MenabungPageState extends State<MenabungPage> {
                 ],
               );
             },
+          ),
+          // Theme toggle
+          Consumer<ThemeService>(
+            builder: (context, themeService, _) => IconButton(
+              icon: Icon(
+                themeService.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+              ),
+              tooltip: "Ganti Tema",
+              onPressed: themeService.toggleTheme,
+            ),
           ),
         ],
       ),
@@ -350,7 +363,7 @@ class _MenabungPageState extends State<MenabungPage> {
 
             const SizedBox(height: 12),
 
-            // Tombol tambah tabungan + filter (notif tetap di navbar)
+            // Tombol tambah tabungan + filter
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

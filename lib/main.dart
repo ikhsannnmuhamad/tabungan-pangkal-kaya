@@ -7,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 // Provider
 import 'package:provider/provider.dart';
 import 'services/notif_service.dart';
+import 'services/theme_service.dart'; // service baru untuk toggle theme
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,8 +17,11 @@ void main() async {
   await initializeDateFormatting('id_ID', null);
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => NotifService(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => NotifService()),
+        ChangeNotifierProvider(create: (_) => ThemeService()), // tambahkan provider theme
+      ],
       child: const TabunganPangkalKayaApp(),
     ),
   );
@@ -28,13 +32,26 @@ class TabunganPangkalKayaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeService = Provider.of<ThemeService>(context);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Tabungan Pangkal Kaya',
+      title: 'E-HTabungan',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.green,
+          brightness: Brightness.light, // langsung di ColorScheme
+        ),
         useMaterial3: true,
       ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.green,
+          brightness: Brightness.dark, // langsung di ColorScheme
+        ),
+        useMaterial3: true,
+      ),
+      themeMode: themeService.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: const HomePage(),
     );
   }

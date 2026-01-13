@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
 import '../widgets/expense_form.dart';
 import '../widgets/expense_table.dart';
-import '../widgets/action_buttons.dart';
+import '../services/theme_service.dart'; // untuk toggle theme
 
 class CalculationPage extends StatefulWidget {
   const CalculationPage({super.key});
@@ -12,12 +14,12 @@ class CalculationPage extends StatefulWidget {
 }
 
 class _CalculationPageState extends State<CalculationPage> {
-  final TextEditingController _salaryController = TextEditingController();
+  final TextEditingController _moneyController = TextEditingController();
   final TextEditingController _expenseNameController = TextEditingController();
   final TextEditingController _expenseAmountController = TextEditingController();
 
   final List<Map<String, dynamic>> _expenses = [];
-  bool _salaryLocked = false;
+  bool _moneyLocked = false;
   bool _isAddingExpense = false;
 
   final NumberFormat currencyFormat = NumberFormat("#,###", "id_ID");
@@ -44,26 +46,26 @@ class _CalculationPageState extends State<CalculationPage> {
     return int.tryParse(raw) ?? 0;
   }
 
-  void _lockSalary() {
-    final text = _salaryController.text.trim();
+  void _lockMoney() {
+    final text = _moneyController.text.trim();
     if (text.isEmpty) {
-      _showSnack('Jumlah gaji tidak boleh kosong');
+      _showSnack('Jumlah uang tidak boleh kosong');
       return;
     }
     if (!_isNumeric(text)) {
-      _showSnack('Jumlah gaji harus berupa angka');
+      _showSnack('Jumlah uang harus berupa angka');
       return;
     }
     setState(() {
-      _salaryLocked = true;
+      _moneyLocked = true;
     });
   }
 
   void _resetAll() {
     setState(() {
-      _salaryController.clear();
+      _moneyController.clear();
       _expenses.clear();
-      _salaryLocked = false;
+      _moneyLocked = false;
       _isAddingExpense = false;
       _expenseNameController.clear();
       _expenseAmountController.clear();
@@ -136,9 +138,9 @@ class _CalculationPageState extends State<CalculationPage> {
   }
 
   void _calculate() {
-    final salaryText = _salaryController.text.trim();
-    if (salaryText.isEmpty || !_isNumeric(salaryText)) {
-      _showSnack('Jumlah gaji harus diisi dan berupa angka');
+    final moneyText = _moneyController.text.trim();
+    if (moneyText.isEmpty || !_isNumeric(moneyText)) {
+      _showSnack('Jumlah uang harus diisi dan berupa angka');
       return;
     }
     if (_expenses.isEmpty) {
@@ -146,10 +148,10 @@ class _CalculationPageState extends State<CalculationPage> {
       return;
     }
 
-    final int salary = _parseInt(salaryText);
+    final int money = _parseInt(moneyText);
     final int totalExpenses =
         _expenses.fold(0, (sum, e) => sum + (e['amount'] as int));
-    final int remaining = salary - totalExpenses;
+    final int remaining = money - totalExpenses;
 
     showDialog(
       context: context,
@@ -160,7 +162,7 @@ class _CalculationPageState extends State<CalculationPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Gaji: Rp ${currencyFormat.format(salary)}'),
+              Text('Jumlah Uang: Rp ${currencyFormat.format(money)}'),
               const SizedBox(height: 8),
               ..._expenses.map(
                 (e) => Text(
@@ -195,43 +197,75 @@ class _CalculationPageState extends State<CalculationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pengkalkulasian Keuangan')),
+      appBar: AppBar(
+        title: const Text('Kalkulator Keuangan'),
+        actions: [
+          Consumer<ThemeService>(
+            builder: (context, themeService, _) => IconButton(
+              icon: Icon(
+                themeService.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+              ),
+              onPressed: themeService.toggleTheme,
+            ),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             TextField(
-              controller: _salaryController,
+              controller: _moneyController,
               keyboardType: TextInputType.number,
-              enabled: !_salaryLocked,
+              enabled: !_moneyLocked,
               decoration: const InputDecoration(
-                labelText: 'Jumlah Gaji',
+                labelText: 'Jumlah Uang',
                 border: OutlineInputBorder(),
               ),
               onChanged: (val) {
                 final formatted = _formatNumber(val);
-                _salaryController.value = TextEditingValue(
+                _moneyController.value = TextEditingValue(
                   text: formatted,
                   selection: TextSelection.collapsed(offset: formatted.length),
                 );
               },
             ),
             const SizedBox(height: 16),
-            if (!_salaryLocked)
+            if (!_moneyLocked)
               ElevatedButton(
-                onPressed: _lockSalary,
+                onPressed: _lockMoney,
                 child: const Text('Lanjutkan'),
               ),
-            if (_salaryLocked) ...[
-              ActionButtons(
-                onAdd: _startAddExpense,
-                onShowTable:
-                    _expenses.isNotEmpty && !_isAddingExpense ? _showExpenseTable : () {},
-                onCalculate:
-                    _expenses.isNotEmpty && !_isAddingExpense ? _calculate : () {},
-                onReset: _resetAll,
-                hasExpenses: _expenses.isNotEmpty,
-                isAdding: _isAddingExpense,
+            if (_moneyLocked) ...[
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _startAddExpense,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Tambah'),
+                  ),
+                  if (_expenses.isNotEmpty && !_isAddingExpense)
+                    ElevatedButton(
+                      onPressed: _showExpenseTable,
+                      child: const Text('Lihat Tabel'),
+                    ),
+                  if (_expenses.isNotEmpty && !_isAddingExpense)
+                    ElevatedButton(
+                      onPressed: _calculate,
+                      child: const Text('Hitung'),
+                    ),
+                  ElevatedButton.icon(
+                    onPressed: _resetAll,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Reset'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               if (_isAddingExpense)

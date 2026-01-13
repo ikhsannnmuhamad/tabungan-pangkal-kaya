@@ -17,7 +17,7 @@ class AppSidebar extends StatelessWidget {
             child: const Align(
               alignment: Alignment.bottomLeft,
               child: Text(
-                'Tabungan Pangkal Kaya',
+                'E-HTabungan',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -35,7 +35,7 @@ class AppSidebar extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.calculate),
-            title: const Text('Pengkalkulasian Keuangan'),
+            title: const Text('Kalkulator Keuangan'),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
