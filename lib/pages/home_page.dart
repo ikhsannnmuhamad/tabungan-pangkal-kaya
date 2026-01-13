@@ -140,7 +140,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      drawer: const AppSidebar(),
+      drawer: const AppSidebar(currentIndex: 0), // <-- perbaikan di sini
       body: SingleChildScrollView(
         child: Column(
           children: [

@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../widgets/expense_form.dart';
 import '../widgets/expense_table.dart';
-import '../services/theme_service.dart'; // untuk toggle theme
+import '../services/theme_service.dart';
+import '../widgets/app_sidebar.dart'; // sidebar dengan currentIndex
 
 class CalculationPage extends StatefulWidget {
   const CalculationPage({super.key});
@@ -198,6 +199,15 @@ class _CalculationPageState extends State<CalculationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
         title: const Text('Kalkulator Keuangan'),
         actions: [
           Consumer<ThemeService>(
@@ -210,6 +220,7 @@ class _CalculationPageState extends State<CalculationPage> {
           ),
         ],
       ),
+      drawer: const AppSidebar(currentIndex: 1), // gunakan index 1 untuk Kalkulator
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

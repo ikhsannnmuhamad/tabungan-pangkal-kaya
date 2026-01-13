@@ -5,7 +5,8 @@ import 'tabungan_detail_page.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../services/notif_service.dart';
-import '../services/theme_service.dart'; // tambahan untuk toggle theme
+import '../services/theme_service.dart';
+import '../widgets/app_sidebar.dart'; // sidebar dengan currentIndex
 
 class MenabungPage extends StatefulWidget {
   const MenabungPage({super.key});
@@ -124,8 +125,7 @@ class _MenabungPageState extends State<MenabungPage> {
               final tujuan = tujuanController.text.trim();
               final target = int.tryParse(
                     targetController.text.replaceAll('.', '').replaceAll(',', ''),
-                  ) ??
-                  0;
+                  ) ?? 0;
               if (tujuan.isEmpty || target <= 0) return;
               await _service.createTabungan(tujuan: tujuan, target: target);
               Navigator.pop(context);
@@ -262,8 +262,17 @@ class _MenabungPageState extends State<MenabungPage> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
         title: const Text("Menabung"),
-        actions: [
+                actions: [
           // Search
           IconButton(
             icon: Icon(_searchVisible ? Icons.close : Icons.search),
@@ -281,7 +290,7 @@ class _MenabungPageState extends State<MenabungPage> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.notifications),
-                                       tooltip: "Notifikasi",
+                    tooltip: "Notifikasi",
                     onPressed: _showNotifDialog,
                   ),
                   if (notifService.unreadCount > 0)
@@ -316,6 +325,7 @@ class _MenabungPageState extends State<MenabungPage> {
           ),
         ],
       ),
+      drawer: const AppSidebar(currentIndex: 2), // sidebar aktif di Menabung
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -333,27 +343,41 @@ class _MenabungPageState extends State<MenabungPage> {
               const SizedBox(height: 12),
             ],
 
-            // Total Saldo
+            // Total Saldo (theme-aware)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(
+                  Theme.of(context).brightness == Brightness.dark ? 0.20 : 0.10,
+                ),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.account_balance_wallet, size: 40, color: Colors.blue),
+                  Icon(
+                    Icons.account_balance_wallet,
+                    size: 40,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Total Saldo',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                       Text(
                         'Rp ${format.format(_totalSaldo)}',
-                        style: const TextStyle(fontSize: 18, color: Colors.black87),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ],
                   ),

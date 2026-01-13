@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../pages/home_page.dart';
 import '../pages/calculation_page.dart';
 import '../pages/menabung_page.dart';
 
 class AppSidebar extends StatelessWidget {
-  const AppSidebar({super.key});
+  final int currentIndex;
+  const AppSidebar({super.key, required this.currentIndex});
 
   @override
   Widget build(BuildContext context) {
@@ -29,33 +31,36 @@ class AppSidebar extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.home),
             title: const Text('Beranda'),
+            selected: currentIndex == 0,
+            selectedTileColor: Colors.blue.withOpacity(0.1),
             onTap: () {
-              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const HomePage()),
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.calculate),
             title: const Text('Kalkulator Keuangan'),
+            selected: currentIndex == 1,
+            selectedTileColor: Colors.blue.withOpacity(0.1),
             onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const CalculationPage(),
-                ),
+                MaterialPageRoute(builder: (_) => const CalculationPage()),
               );
             },
           ),
           ListTile(
             leading: const Icon(Icons.savings),
             title: const Text('Menabung'),
+            selected: currentIndex == 2,
+            selectedTileColor: Colors.blue.withOpacity(0.1),
             onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const MenabungPage(),
-                ),
+                MaterialPageRoute(builder: (_) => const MenabungPage()),
               );
             },
           ),
