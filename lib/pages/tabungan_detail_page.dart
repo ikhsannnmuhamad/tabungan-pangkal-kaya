@@ -14,6 +14,7 @@ class TabunganDetailPage extends StatefulWidget {
 
 class _TabunganDetailPageState extends State<TabunganDetailPage> {
   final _jumlahController = TextEditingController();
+  final _namaPengeluaranController = TextEditingController();
   final _service = TabunganService();
   final NumberFormat format = NumberFormat("#,###", "id_ID");
   final DateFormat tanggalFormat = DateFormat("d MMMM yyyy", "id_ID");
@@ -21,9 +22,11 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
 
   Map<String, dynamic>? _tabungan;
   List<Map<String, dynamic>> _history = [];
+  List<Map<String, dynamic>> _pengeluaran = [];
 
   bool _showInput = false;
   bool _showHistory = false;
+  bool _showPengeluaran = false;
 
   @override
   void initState() {
@@ -39,8 +42,10 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
       });
     }
     final hist = await _service.getHistory(widget.tabunganId);
+    final peng = await _service.getPengeluaran(widget.tabunganId);
     setState(() {
       _history = hist;
+      _pengeluaran = peng;
     });
   }
 
@@ -52,29 +57,44 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
 
     await _service.setorTabungan(tabunganId: widget.tabunganId, jumlah: jumlah);
     _jumlahController.clear();
-    setState(() {
-      _showInput = false;
-    });
+    setState(() => _showInput = false);
     await _loadData();
 
-    // Tambahkan ke NotifService global
     final notifService = Provider.of<NotifService>(context, listen: false);
     notifService.addNotif(
       "Berhasil input setoran sebesar Rp ${format.format(jumlah)} pada ${tanggalFormat.format(DateTime.now())}",
       tipe: 'setor',
     );
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Setoran Rp ${format.format(jumlah)} berhasil ditambahkan')),
+  Future<void> _tambahPengeluaran() async {
+    final nama = _namaPengeluaranController.text.trim();
+    final jumlah = int.tryParse(
+      _jumlahController.text.replaceAll('.', '').replaceAll(',', ''),
+    ) ?? 0;
+    if (nama.isEmpty || jumlah <= 0) return;
+
+    await _service.pengeluaranTabungan(
+      tabunganId: widget.tabunganId,
+      nama: nama,
+      jumlah: jumlah,
+    );
+    _namaPengeluaranController.clear();
+    _jumlahController.clear();
+    setState(() => _showPengeluaran = false);
+    await _loadData();
+
+    final notifService = Provider.of<NotifService>(context, listen: false);
+    notifService.addNotif(
+      "Pengeluaran '$nama' sebesar Rp ${format.format(jumlah)} dicatat pada ${tanggalFormat.format(DateTime.now())}",
+      tipe: 'hapus',
     );
   }
 
   @override
   Widget build(BuildContext context) {
     if (_tabungan == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final int target = int.tryParse(_tabungan!['target'].toString()) ?? 0;
@@ -200,7 +220,6 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Info tabungan
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               decoration: BoxDecoration(
@@ -217,18 +236,14 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
                       children: [
                         Text('Target: Rp ${format.format(target)}'),
                         Text('Jumlah Terkumpul: Rp ${format.format(saldo)}'),
-                        Text('Status: $status',
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text('Status: $status', style: const TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Tombol aksi
             Row(
               children: [
                 if (!isTercapai)
@@ -240,18 +255,26 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
                       backgroundColor: _showInput ? Colors.red : null,
                     ),
                   ),
-                if (!isTercapai) const SizedBox(width: 12),
+                const SizedBox(width: 12),
                 ElevatedButton.icon(
+                  onPressed: () => setState(() => _showPengeluaran = !_showPengeluaran),
+                  icon: Icon(_showPengeluaran ? Icons.close : Icons.money_off),
+                  label: Text(_showPengeluaran ? 'Batalkan' : 'Pengeluaran'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _showPengeluaran ? Colors.red : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                                ElevatedButton.icon(
                   onPressed: () => setState(() => _showHistory = !_showHistory),
                   icon: Icon(_showHistory ? Icons.close : Icons.history),
-                  label: Text(_showHistory ? 'Tutup History' : 'Lihat History'),
+                  label: Text(_showHistory ? 'Tutup' : 'History'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _showHistory ? Colors.red : null,
                   ),
                 ),
               ],
             ),
-
             const SizedBox(height: 16),
 
             // Input setoran
@@ -276,67 +299,92 @@ class _TabunganDetailPageState extends State<TabunganDetailPage> {
                 },
               ),
               const SizedBox(height: 8),
-                            ElevatedButton(
+              ElevatedButton(
                 onPressed: _setor,
                 child: const Text('Simpan Setoran'),
               ),
               const SizedBox(height: 16),
             ],
 
-            // History setoran
-            if (_showHistory) ...[
-              const Text('History Setoran:', style: TextStyle(fontWeight: FontWeight.bold)),
+            // Input pengeluaran
+            if (_showPengeluaran) ...[
+              TextField(
+                controller: _namaPengeluaranController,
+                decoration: const InputDecoration(
+                  labelText: 'Nama Pengeluaran',
+                  border: OutlineInputBorder(),
+                ),
+              ),
               const SizedBox(height: 8),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _history.length,
-                  itemBuilder: (context, index) {
-                    final h = _history[index];
+              TextField(
+                controller: _jumlahController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Jumlah Pengeluaran',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (val) {
+                  final raw = val.replaceAll('.', '').replaceAll(',', '');
+                  final number = int.tryParse(raw);
+                  if (number != null) {
+                    final formatted = format.format(number);
+                    _jumlahController.value = TextEditingValue(
+                      text: formatted,
+                      selection: TextSelection.collapsed(offset: formatted.length),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: _tambahPengeluaran,
+                child: const Text('Simpan Pengeluaran'),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // History setoran & pengeluaran
+            if (_showHistory) Expanded(
+              child: ListView(
+                children: [
+                  const Text('History Setoran:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ..._history.map((h) {
                     final jumlah = int.tryParse(h['jumlah'].toString()) ?? 0;
                     final waktu = DateTime.tryParse(h['waktu'].toString());
                     final formatted = waktu != null
                         ? "diinput pada ${tanggalFormat.format(waktu)} • ${jamFormat.format(waktu)}"
                         : h['waktu'].toString();
-
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 6),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(Icons.attach_money, color: Colors.green),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Rp ${format.format(jumlah)}',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    formatted,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                      child: ListTile(
+                        leading: const Icon(Icons.attach_money, color: Colors.green),
+                        title: Text('Rp ${format.format(jumlah)}'),
+                        subtitle: Text(formatted),
                       ),
                     );
-                  },
-                ),
+                  }),
+                  const SizedBox(height: 12),
+                  const Text('History Pengeluaran:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ..._pengeluaran.map((p) {
+                    final jumlah = int.tryParse(p['jumlah'].toString()) ?? 0;
+                    final waktu = DateTime.tryParse(p['waktu'].toString());
+                    final formatted = waktu != null
+                        ? "dicatat pada ${tanggalFormat.format(waktu)} • ${jamFormat.format(waktu)}"
+                        : p['waktu'].toString();
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      child: ListTile(
+                        leading: const Icon(Icons.money_off, color: Colors.red),
+                        title: Text("${p['nama']} - Rp ${format.format(jumlah)}"),
+                        subtitle: Text(formatted),
+                      ),
+                    );
+                  }),
+                ],
               ),
-            ],
+            ),
           ],
         ),
       ),

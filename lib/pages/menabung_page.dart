@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../services/notif_service.dart';
 import '../services/theme_service.dart';
-import '../widgets/app_sidebar.dart'; // sidebar dengan currentIndex
+import '../widgets/app_sidebar.dart';
 
 class MenabungPage extends StatefulWidget {
   const MenabungPage({super.key});
@@ -250,7 +250,7 @@ class _MenabungPageState extends State<MenabungPage> {
           .toLowerCase()
           .contains(_searchQuery.toLowerCase());
 
-      final cocokFilter = switch (_filterStatus) {
+            final cocokFilter = switch (_filterStatus) {
         'Semua' => true,
         'Proses' => data['status'] != 'tercapai',
         'Tercapai' => data['status'] == 'tercapai',
@@ -272,8 +272,7 @@ class _MenabungPageState extends State<MenabungPage> {
           ),
         ),
         title: const Text("Menabung"),
-                actions: [
-          // Search
+        actions: [
           IconButton(
             icon: Icon(_searchVisible ? Icons.close : Icons.search),
             tooltip: _searchVisible ? "Tutup Pencarian" : "Cari . . .",
@@ -283,7 +282,6 @@ class _MenabungPageState extends State<MenabungPage> {
               if (!_searchVisible) _searchQuery = "";
             }),
           ),
-          // Notifikasi
           Consumer<NotifService>(
             builder: (context, notifService, _) {
               return Stack(
@@ -313,7 +311,6 @@ class _MenabungPageState extends State<MenabungPage> {
               );
             },
           ),
-          // Theme toggle
           Consumer<ThemeService>(
             builder: (context, themeService, _) => IconButton(
               icon: Icon(
@@ -325,7 +322,7 @@ class _MenabungPageState extends State<MenabungPage> {
           ),
         ],
       ),
-      drawer: const AppSidebar(currentIndex: 2), // sidebar aktif di Menabung
+      drawer: const AppSidebar(currentIndex: 2),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -342,8 +339,6 @@ class _MenabungPageState extends State<MenabungPage> {
               ),
               const SizedBox(height: 12),
             ],
-
-            // Total Saldo (theme-aware)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               decoration: BoxDecoration(
@@ -384,10 +379,7 @@ class _MenabungPageState extends State<MenabungPage> {
                 ],
               ),
             ),
-
             const SizedBox(height: 12),
-
-            // Tombol tambah tabungan + filter
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -404,10 +396,7 @@ class _MenabungPageState extends State<MenabungPage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 16),
-
-            // Grid badge tabungan
             Center(
               child: Wrap(
                 spacing: 12,
@@ -416,12 +405,10 @@ class _MenabungPageState extends State<MenabungPage> {
                 children: filtered.map((entry) {
                   final id = entry.key;
                   final data = Map<String, dynamic>.from(entry.value);
-
                   final int saldo = int.tryParse(data['saldo'].toString()) ?? 0;
                   final int target = int.tryParse(data['target'].toString()) ?? 1;
                   final int percent = ((saldo / target) * 100).clamp(0, 100).toInt();
                   final String status = data['status'] == 'tercapai' ? 'Tercapai' : 'Proses';
-
                   return Stack(
                     children: [
                       BadgeWidget(
@@ -466,7 +453,6 @@ class _MenabungPageState extends State<MenabungPage> {
   }
 }
 
-// Helper: group by jam untuk dialog notifikasi (terbaru di atas)
 Map<String, List<Map<String, dynamic>>> groupByJamDescending(List<Map<String, dynamic>> list) {
   final sorted = [...list]..sort((a, b) => (b['waktu'] as DateTime).compareTo(a['waktu'] as DateTime));
   final Map<String, List<Map<String, dynamic>>> grouped = {};

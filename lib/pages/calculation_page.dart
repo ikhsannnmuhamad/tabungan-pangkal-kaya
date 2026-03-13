@@ -158,7 +158,7 @@ class _CalculationPageState extends State<CalculationPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Hasil Kalkulasi'),
+          title: const Text('Hasil Kalkulator'),
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,

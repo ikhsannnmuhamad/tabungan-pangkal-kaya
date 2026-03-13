@@ -9,6 +9,7 @@ import '../services/theme_service.dart';
 
 import '../pages/calculation_page.dart';
 import '../pages/menabung_page.dart';
+import '../pages/pengeluaran_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -140,7 +141,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      drawer: const AppSidebar(currentIndex: 0), // <-- perbaikan di sini
+      drawer: const AppSidebar(currentIndex: 0),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -185,9 +186,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     IconButton(
                       icon: Icon(
-                        _hideSaldo
-                            ? Icons.visibility
-                            : Icons.visibility_off,
+                        _hideSaldo ? Icons.visibility : Icons.visibility_off,
                         color: Colors.green,
                       ),
                       onPressed: _toggleSaldo,
@@ -217,8 +216,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 Text('${_currentIndex + 1} / ${_cards.length}'),
                 IconButton(
-                  onPressed:
-                      _currentIndex < _cards.length - 1 ? _next : null,
+                  onPressed: _currentIndex < _cards.length - 1 ? _next : null,
                   icon: const Icon(Icons.arrow_forward),
                 ),
               ],
@@ -239,7 +237,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   _quickMenu(
                     icon: Icons.calculate,
-                    label: 'Kalkulasi',
+                    label: 'Kalkulator',
                     onTap: () {
                       Navigator.push(
                         context,
@@ -258,7 +256,19 @@ class _HomePageState extends State<HomePage> {
                         MaterialPageRoute(
                           builder: (_) => const MenabungPage(),
                         ),
-                      );
+                      ).then((_) => _loadTotalSaldo());
+                    },
+                  ),
+                  _quickMenu(
+                    icon: Icons.edit_note,
+                    label: 'Pengeluaran',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PengeluaranPage(),
+                        ),
+                      ).then((_) => _loadTotalSaldo());
                     },
                   ),
                 ],

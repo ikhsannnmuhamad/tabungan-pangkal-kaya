@@ -1,102 +1,142 @@
 import 'package:firebase_database/firebase_database.dart';
 
 class TabunganService {
-  final DatabaseReference _db = FirebaseDatabase.instance.ref('menabung');
+  final DatabaseReference _db = FirebaseDatabase.instance.ref("menabung");
 
-  /// Membuat tabungan baru dengan wishlist
-  Future<void> createTabungan({
-    required String tujuan,
-    required int target,
-    String kategori = 'sekunder', // primer / sekunder / tersier
-    DateTime? deadline,
-    List<String> wishlist = const [],
-  }) async {
+  Future<Map<String, dynamic>> getAllTabungan() async {
+    final snapshot = await _db.get();
+    if (!snapshot.exists || snapshot.value == null) return {};
+    return Map<String, dynamic>.from(snapshot.value as Map);
+  }
+
+  Future<void> createTabungan({required String tujuan, required int target}) async {
     final newRef = _db.push();
     await newRef.set({
       'tujuan': tujuan,
       'target': target,
       'saldo': 0,
       'status': 'proses',
-      'kategori': kategori,
-      'deadline': deadline?.toIso8601String(),
-      'wishlist': wishlist,
-      'created_at': DateTime.now().toIso8601String(),
     });
   }
 
-  /// Mengambil semua tabungan
-  Future<Map<String, dynamic>> getAllTabungan() async {
-    final snapshot = await _db.get();
-    if (snapshot.exists) {
-      return Map<String, dynamic>.from(snapshot.value as Map);
-    }
-    return {};
+  int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    final normalized = value.toString().replaceAll(RegExp(r'[^0-9]'), '');
+    return int.tryParse(normalized) ?? 0;
   }
 
-  /// Menyetor tabungan
-  Future<void> setorTabungan({
-    required String tabunganId,
-    required int jumlah,
-  }) async {
-    final tabunganRef = _db.child(tabunganId);
-    final snapshot = await tabunganRef.get();
-    if (!snapshot.exists) return;
+  Future<void> setorTabungan({required String tabunganId, required int jumlah}) async {
+    final ref = _db.child(tabunganId);
+    final snapshot = await ref.get();
+    if (!snapshot.exists || snapshot.value == null) return;
 
     final data = Map<String, dynamic>.from(snapshot.value as Map);
-    final int saldoLama = data['saldo'] ?? 0;
-    final int target = data['target'] ?? 0;
+    final saldo = _parseInt(data['saldo']);
+    final target = _parseInt(data['target']);
+    final newSaldo = saldo + jumlah;
 
-    final int saldoBaru = saldoLama + jumlah;
-    final String statusBaru = saldoBaru >= target ? 'tercapai' : 'proses';
+    await ref.update({
+      'saldo': newSaldo,
+      'status': newSaldo >= target ? 'tercapai' : 'proses',
+    });
 
-    await tabunganRef.child('history').push().set({
+    await ref.child('history').push().set({
       'jumlah': jumlah,
       'waktu': DateTime.now().toIso8601String(),
     });
+  }
 
-    await tabunganRef.update({
-      'saldo': saldoBaru,
-      'status': statusBaru,
+  Future<void> pengeluaranTabungan({
+    required String tabunganId,
+    required String nama,
+    required int jumlah,
+  }) async {
+    final ref = _db.child(tabunganId);
+    final snapshot = await ref.get();
+    if (!snapshot.exists || snapshot.value == null) return;
+
+    final data = Map<String, dynamic>.from(snapshot.value as Map);
+    final saldo = _parseInt(data['saldo']);
+    final target = _parseInt(data['target']);
+    final newSaldo = saldo - jumlah;
+
+    // Jika tabungan sudah pernah tercapai, maka setiap pengeluaran wajib
+    // mengembalikan status menjadi 'proses' (agar badge ikut berubah).
+    final wasTercapai = data['status'] == 'tercapai';
+    final updatedStatus = wasTercapai ? 'proses' : (newSaldo >= target ? 'tercapai' : 'proses');
+
+    await ref.update({
+      'saldo': newSaldo < 0 ? 0 : newSaldo,
+      'status': updatedStatus,
+    });
+
+    await ref.child('pengeluaran').push().set({
+      'nama': nama,
+      'jumlah': jumlah,
+      'waktu': DateTime.now().toIso8601String(),
     });
   }
 
-  /// Mengambil history setoran
   Future<List<Map<String, dynamic>>> getHistory(String tabunganId) async {
     final snapshot = await _db.child(tabunganId).child('history').get();
-    if (!snapshot.exists) return [];
-    final Map data = snapshot.value as Map;
+    if (!snapshot.exists || snapshot.value == null) return [];
+
+    final data = Map<String, dynamic>.from(snapshot.value as Map);
     return data.entries.map<Map<String, dynamic>>((e) {
+      final value = Map<String, dynamic>.from(e.value as Map);
       return {
         'id': e.key,
-        'jumlah': e.value['jumlah'],
-        'waktu': e.value['waktu'],
+        'jumlah': value['jumlah'],
+        'waktu': value['waktu'],
       };
     }).toList();
   }
 
-  /// Menghapus tabungan
-  Future<void> deleteTabungan(String id) async {
-    await _db.child(id).remove();
+  Future<List<Map<String, dynamic>>> getPengeluaran(String tabunganId) async {
+    final snapshot = await _db.child(tabunganId).child('pengeluaran').get();
+    if (!snapshot.exists || snapshot.value == null) return [];
+
+    final data = Map<String, dynamic>.from(snapshot.value as Map);
+    return data.entries.map<Map<String, dynamic>>((e) {
+      final value = Map<String, dynamic>.from(e.value as Map);
+      return {
+        'id': e.key,
+        'nama': value['nama'],
+        'jumlah': value['jumlah'],
+        'waktu': value['waktu'],
+      };
+    }).toList();
   }
 
-  /// Update tabungan
-  Future<void> updateTabungan(
-    String id, {
-    String? tujuan,
-    int? target,
-    String? kategori,
-    DateTime? deadline,
-    List<String>? wishlist,
-  }) async {
-    final updateData = <String, dynamic>{};
-    if (tujuan != null) updateData['tujuan'] = tujuan;
-    if (target != null) updateData['target'] = target;
-    if (kategori != null) updateData['kategori'] = kategori;
-    if (deadline != null) updateData['deadline'] = deadline.toIso8601String();
-    if (wishlist != null) updateData['wishlist'] = wishlist;
+  Future<Map<String, List<Map<String, dynamic>>>> getPengeluaranTabungan() async {
+    final snapshot = await _db.get();
+    if (!snapshot.exists || snapshot.value == null) return {};
 
-    if (updateData.isNotEmpty) {
-      await _db.child(id).update(updateData);
+    final allData = Map<String, dynamic>.from(snapshot.value as Map);
+    final result = <String, List<Map<String, dynamic>>>{};
+
+    for (var entry in allData.entries) {
+      final tabunganId = entry.key;
+      final tabunganData = Map<String, dynamic>.from(entry.value as Map);
+
+      if (tabunganData['pengeluaran'] != null) {
+        final pengeluaranData = Map<String, dynamic>.from(tabunganData['pengeluaran'] as Map);
+        result[tabunganId] = pengeluaranData.entries.map<Map<String, dynamic>>((e) {
+          final value = Map<String, dynamic>.from(e.value as Map);
+          return {
+            'id': e.key,
+            'nama': value['nama'],
+            'jumlah': value['jumlah'],
+            'waktu': value['waktu'],
+          };
+        }).toList();
+      }
     }
+
+    return result;
+  }
+
+  Future<void> deleteTabungan(String id) async {
+    await _db.child(id).remove();
   }
 }

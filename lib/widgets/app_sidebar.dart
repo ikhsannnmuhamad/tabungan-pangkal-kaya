@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../pages/home_page.dart';
 import '../pages/calculation_page.dart';
 import '../pages/menabung_page.dart';
+import '../pages/pengeluaran_page.dart';
 
 class AppSidebar extends StatelessWidget {
   final int currentIndex;
@@ -10,22 +11,14 @@ class AppSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: Column(
+      child: ListView(
+        padding: EdgeInsets.zero,
         children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            child: const Align(
-              alignment: Alignment.bottomLeft,
-              child: Text(
-                'E-HTabungan',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+          const DrawerHeader(
+            decoration: BoxDecoration(color: Colors.blue),
+            child: Text(
+              'Menu',
+              style: TextStyle(color: Colors.white, fontSize: 24),
             ),
           ),
           ListTile(
@@ -42,7 +35,7 @@ class AppSidebar extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.calculate),
-            title: const Text('Kalkulator Keuangan'),
+            title: const Text('Kalkulator'),
             selected: currentIndex == 1,
             selectedTileColor: Colors.blue.withOpacity(0.1),
             onTap: () {
@@ -61,6 +54,18 @@ class AppSidebar extends StatelessWidget {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (_) => const MenabungPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.edit_note),
+            title: const Text('Pengeluaran'),
+            selected: currentIndex == 3,
+            selectedTileColor: Colors.blue.withOpacity(0.1),
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const PengeluaranPage()),
               );
             },
           ),
